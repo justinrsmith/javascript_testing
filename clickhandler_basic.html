@@ -1,0 +1,17 @@
+<button id="foo">Click me</button>
+
+<script>
+    // Get button with id "foo"
+    var foo = document.getElementById('foo')
+    var test = 'a test'
+    // Clickhandler added to button "foo", just calls another function
+    var clickHandler = function(e){
+        clickHandler2(e, test)
+    }
+    var clickHandler2 = function(e, test){
+        console.log(test)
+        console.log('you clicked the button labeled "'+e.currentTarget.innerText+'"')
+    }
+    // Add click handler to "foo" button
+    foo.addEventListener('click', clickHandler)
+</script>

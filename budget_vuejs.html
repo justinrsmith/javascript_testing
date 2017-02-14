@@ -1,0 +1,180 @@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.0.3/vue.js"></script>
+
+
+<!-- div where we render actual output -->
+<div id="budgetoutput">
+    <budget :expenses="expenses"></budget>
+</div>
+
+<!-- this is where we build the actual out put of budget tags -->
+<script type="text/template" id="budget">
+    <div>
+        <table>
+            <tr>
+                <td>Expense</td>
+                <td>Amount</td>
+            </tr>
+            <tbody v-for="(expense, index) in expenses">
+                <budgetrow
+                    @eventBudgetRow="handleEvent"
+                    :index="index"
+                    :expense="expense"
+                    :lastindex="index===(expenses.length-1)">
+                </budgetrow>
+            </tbody>
+            <tr>
+                <td>Total</td>
+                <td>{{ total }}</td>
+            </td>
+        </table>
+        <budgetform @eventBudgetRow="handleEvent" :addExpense="addExpense" ref="form"></budgetform>
+
+        <button v-if="!addExpense" v-on:click="addExpense = true">Add Expense</button>
+    </div>
+</script>
+
+<script type="text/template" id="budgetrow">
+    <tr v-if="!editExpense">
+        <td>
+            {{expense.name}}
+        </td>
+        <td>
+            {{expense.amount}}
+        </td>
+        <td>
+            <button v-on:click="editExpense=true">Edit</button>
+        </td>
+        <td>
+            <button v-on:click="onClick('delete')">Delete</button>
+        </td>
+        <td>
+            <button v-if="index>0" v-on:click="onClick('move', 'up')">Up</button>
+        </td>
+        <td>
+            <button v-if="!lastindex" v-on:click="onClick('move', 'down')">Down</button>
+        </td>
+    </tr>
+    <tr v-else>
+        <td>
+            <input v-model="expenseCopy.name">
+        </td>
+        <td>
+            <input v-model="expenseCopy.amount">
+        </td>
+        <td>
+            <button v-on:click="onClick('edit')">Save Edit</button>
+        </td>
+    </tr>
+</script>
+
+<script type="text/template" id="budgetform">
+    <div v-if="addExpense">
+        <input v-model="name">
+        <input v-model="amount">
+        <button v-on:click="onClick('add')">Add</button>
+    </div>
+</script>
+
+<script type="text/javascript">
+
+    var mixin = {
+        methods: {
+            onClick: function(eventType, direction) {
+                // so if direction is defined then it is moveup/down so pass that other wise
+                // pass the data via expenseCopy
+                this.$emit('eventBudgetRow', {
+                    event: eventType,
+                    index: this.index,
+                    data: {
+                        model: this.expenseCopy,
+                        direction: direction
+                    }
+                })
+                this.editExpense = false
+            }
+        },
+        computed: {
+            expenseCopy: function () {
+                return {
+                    name: !this.expense?this.name:this.expense.name,
+                    amount: !this.expense?this.amount:this.expense.amount
+                }
+            }
+        }
+    }
+
+    var budget = Vue.component('budget', {
+        template: '#budget',
+        props: ['expenses'],
+        data: function () {
+            return {
+                addExpense: false
+            }
+        },
+        methods: {
+            handleEvent: function (eventData) {
+                if (eventData.event == 'add'){
+                    this.expenses.push(eventData.data.model)
+                }
+                else if (eventData.event == 'delete')
+                    this.expenses.splice(eventData.index, 1)
+                else if (eventData.event == 'move'){
+                    var newIndex = eventData.data.direction == 'up'?eventData.index - 1:eventData.index + 1
+                    this.expenses.splice(newIndex, 0, this.expenses.splice(eventData.index, 1)[0])
+                }
+                else
+                    Vue.set(this.expenses, eventData.index, eventData.data.model)
+            }
+        },
+        computed: {
+            total: function () {
+                totalAmount = 0
+                this.expenses.forEach(function(obj){
+                    totalAmount += parseInt(obj.amount)
+                })
+                return totalAmount
+            }
+        }
+    })
+
+    var budgetrow = Vue.component('budgetrow', {
+        template: '#budgetrow',
+        props: ['expense', 'index', 'lastindex'],
+        mixins: [mixin],
+        data: function () {
+            return {
+                editExpense: false
+            }
+        }
+    })
+
+    var budgetform = Vue.component('budgetform', {
+        template: '#budgetform',
+        props: ['addExpense'],
+        mixins: [mixin],
+        data: function () {
+            return {
+                name: 'Expense',
+                amount: 100
+            }
+        }
+    })
+
+</script>
+
+<script>
+    var data = [
+        {name: 'Car', amount: 100},
+        {name: 'House', amount: 400},
+        {name: 'Utilities', amount: 150},
+        {name: 'Loan', amount: 200},
+        {name: 'Groceries', amount: 100},
+        {name: 'Spending', amount: 150}
+    ]
+    new Vue({
+        el: '#budgetoutput',
+        data: {
+            expenses: data
+        }
+    })
+</script>
