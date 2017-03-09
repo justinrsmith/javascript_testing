@@ -1,0 +1,175 @@
+<head>
+    <!--<script src="https://unpkg.com/vue/dist/vue.js"></script>-->
+    <script src="../static/vue.min.js"></script>
+    <style media="screen">
+        body {
+            font-family: Helvetica Neue, Arial, sans-serif;
+            font-size: 14px;
+            color: #444;
+        }
+
+        table {
+            border: 2px solid #42b983;
+            border-radius: 3px;
+            background-color: #fff;
+        }
+
+        th {
+            background-color: #42b983;
+            color: rgba(255,255,255,0.66);
+            cursor: pointer;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        td {
+            background-color: #f9f9f9;
+        }
+
+        th, td {
+            min-width: 120px;
+            padding: 10px 20px;
+        }
+
+        th.active {
+            color: #fff;
+        }
+
+        th.active .arrow {
+            opacity: 1;
+        }
+
+        .arrow {
+            display: inline-block;
+            vertical-align: middle;
+            width: 0;
+            height: 0;
+            margin-left: 5px;
+            opacity: 0.66;
+        }
+
+        .arrow.asc {
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-bottom: 4px solid #fff;
+        }
+
+        .arrow.dsc {
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 4px solid #fff;
+        }
+    </style>
+</head>
+
+<!-- component template -->
+<script type="text/x-template" id="grid-template">
+    <div>
+      <form id="search">
+        Search <input name="query" v-model="searchQuery">
+      </form>
+      <table>
+        <thead>
+          <tr>
+            <!-- TODO color not turning white on first click-->
+            <th v-for="col in columns" v-on:click="sortColumn(col)" :class="!(sortCol==col)?null:'active'">
+                {% raw %}
+                  {{ col | capitalize }}
+                {% endraw %}
+              <span class="arrow" :class="sortOrder[col] =='asc' || sortOrder[col] == null ? 'asc':'dsc'">
+              </span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="entry in filteredData">
+            <td v-for="col in columns">
+              {% raw %}
+                {{entry[col]}}
+              {% endraw %}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+  </div>
+</script>
+
+<!-- demo root element -->
+<div id="demo">
+  <demo-grid
+    :data="{{ data }}">
+  </demo-grid>
+</div>
+
+<script type="text/javascript">
+    // register the grid component
+    Vue.component('demo-grid', {
+        template: '#grid-template',
+        props: {
+            data: Array,
+            filterKey: String
+        },
+        data: function() {
+            var sortOrders = {}
+            Object.keys(this.data[0]).sort().forEach(function(col){
+                sortOrders[col] = null
+            })
+            return {
+                columns: Object.keys(this.data[0]).sort(),
+                searchQuery: '',
+                sortCol: null,
+                // asc, dsc
+                sortOrder: sortOrders
+            }
+        },
+        filters: {
+            capitalize: function(value) {
+                 return value.charAt(0).toUpperCase() + value.slice(1);
+            }
+        },
+        computed: {
+            filteredData: function(){
+                var searchQuery = this.searchQuery.toLowerCase()
+                var sortCol = this.sortCol
+                var data = this.data
+                var sortOrder = this.sortOrder
+                if(searchQuery){
+                    var data = data.filter(function(obj){
+                        return Object.keys(obj).some(function(key){
+                            return String(obj[key]).toLowerCase().indexOf(searchQuery) > -1
+                        })
+                    })
+                }
+                if(sortCol){
+                    var data = data.sort(function(a, b){
+                        var nameA = a[sortCol]
+                        var nameB = b[sortCol]
+                        if(typeof(a[sortCol]) == 'string' && typeof(b[sortCol]) == 'string'){
+                            var nameA = a[sortCol].toLowerCase()
+                            var nameB = b[sortCol].toLowerCase()
+                        }
+                        if(nameA < nameB)
+                            return sortOrder[sortCol]=='dsc'?1:-1
+                        if(nameA > nameB)
+                            return sortOrder[sortCol]=='dsc'?-1:1
+                        return 0
+                    })
+                }
+                return data
+            }
+        },
+        methods: {
+            sortColumn: function(col){
+                this.sortCol = col
+                this.sortOrder[col] = (!this.sortOrder[col] || this.sortOrder[col] == 'asc')?'dsc':'asc'
+            }
+        }
+    })
+    // bootstrap the demo
+    var demo = new Vue({
+        el: '#demo'
+    })
+
+</script>
