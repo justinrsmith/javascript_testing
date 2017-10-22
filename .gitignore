@@ -1,3 +1,4 @@
 .DS_STORE
 vue_grid_flask/venv/
 vue_grid_flask/__pycache__/
+modern-js/node_modules/
